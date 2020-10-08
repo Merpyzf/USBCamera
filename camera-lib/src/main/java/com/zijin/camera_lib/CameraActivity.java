@@ -261,4 +261,10 @@ public class CameraActivity extends AppCompatActivity {
             }
         }).start();
     }
+
+    @Override
+    public void onBackPressed() {
+        setResult(Activity.RESULT_CANCELED);
+        finish();
+    }
 }
