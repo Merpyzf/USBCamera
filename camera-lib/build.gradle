@@ -1,5 +1,6 @@
 apply plugin: 'com.android.library'
-
+apply plugin: 'com.github.dcendents.android-maven'
+group='com.github.merpyzf'
 android {
     compileSdkVersion 27
     buildToolsVersion "27.0.1"
@@ -21,7 +22,6 @@ android {
         }
     }
 }
-
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation 'com.android.support:appcompat-v7:27.0.0'
@@ -29,5 +29,5 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
-
+    implementation 'com.github.Liuguihong:AndroidUVCCamera:1.0.0'
 }
