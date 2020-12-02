@@ -1,1 +1,5 @@
-<resources></resources>
+<resources>
+    <string name="usb_permission_failed">权限授予异常，请插拔USB接口重新授权</string>
+    <string name="cannot_find_usb">"未识别到USB摄像头，请检查连接"</string>
+
+</resources>

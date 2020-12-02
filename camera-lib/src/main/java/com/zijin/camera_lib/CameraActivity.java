@@ -4,80 +4,106 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.Point;
-import android.graphics.drawable.ColorDrawable;
+import android.graphics.Region;
 import android.hardware.usb.UsbDevice;
-import android.media.SoundPool;
-import android.os.Build;
+import android.media.FaceDetector;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
-import android.support.v4.content.ContextCompat;
+import android.support.constraint.ConstraintLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.MotionEvent;
+import android.util.Log;
 import android.view.TextureView;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
 import com.lgh.uvccamera.UVCCameraProxy;
 import com.lgh.uvccamera.bean.PicturePath;
 import com.lgh.uvccamera.callback.ConnectCallback;
-import com.lgh.uvccamera.callback.PictureCallback;
-import com.zijin.camera_lib.hepler.DataPersistenceHelper;
+import com.lgh.uvccamera.callback.PreviewCallback;
+import com.lgh.uvccamera.utils.FileUtil;
+import com.lgh.uvccamera.utils.ImageUtil;
 import com.zijin.camera_lib.hepler.PictureHelper;
+import com.zijin.camera_lib.hepler.ServiceHelper;
+import com.zijin.camera_lib.model.dto.FaceResult;
+import com.zijin.camera_lib.model.http.FaceService;
 
-import java.util.ArrayList;
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+
+import okhttp3.MediaType;
+import okhttp3.RequestBody;
+import retrofit2.Call;
+import retrofit2.Response;
 
 public class CameraActivity extends AppCompatActivity {
     // ui
-    private RelativeLayout rlContainer;
     private TextureView previewView;
-    private ImageView ivTakePhoto;
-    private LinearLayout emptyHolderView;
+    private ConstraintLayout emptyContainer;
     private TextView tvEmptyMsg;
-    private RelativeLayout picturePreviewContainer;
-    private ImageView ivPicturePreview;
-    private Button btnRetry;
-    private Button btnDone;
+    private TextView tvNotify;
     // logic
+    private final Point previewSize = new Point(1920, 1080);
+    private final Region faceRegion = new Region(384, 97, 876, 580);
+    public final static int REQ_START_CAMERA = 0x0814;
+    private final int STATUS_FINDING = 0x0814;
+    private final int STATUS_VERIFYING = 0x0815;
+    private final int STATUS_VERIFY_SUCCESS = 0x0816;
+    private final int STATUS_VERIFY_FAILED = 0x0817;
     private UVCCameraProxy uvcCamera;
     private Context context;
-    private SoundPool soundPool;
-    private boolean takePictureSound = false;
-    private Point previewSize = new Point(1280, 720);
-    private ArrayList<String> supportedPreviewSize = new ArrayList<>();
-    private String currTakePicturePath;
-    public static final int REQ_START_CAMERA = 0x0814;
 
-    private Handler messageHandler = new Handler(new Handler.Callback() {
+
+    private final Handler messageHandler = new Handler(new Handler.Callback() {
         @Override
         public boolean handleMessage(Message msg) {
-            String extraKey = "base64Picture";
-            Intent intent = new Intent();
-            intent.putExtra(extraKey, "ok, we got data!");
-            setResult(Activity.RESULT_OK, intent);
-            finish();
+            if (msg.what == STATUS_FINDING) {
+                // 人脸检测中
+                tvNotify.setText("人脸检测中，请将人脸放入识别区域");
+                tvNotify.setTextColor(Color.WHITE);
+            } else if (msg.what == STATUS_VERIFYING) {
+                Toast.makeText(context, "检测到人脸，识别中", Toast.LENGTH_SHORT).show();
+                // 检测到人脸，人脸识别中
+                tvNotify.setText("检测到人脸，识别中");
+                tvNotify.setTextColor(Color.WHITE);
+            } else if (msg.what == STATUS_VERIFY_SUCCESS) {
+                Toast.makeText(context, "人脸识别成功", Toast.LENGTH_SHORT).show();
+                tvNotify.setText("人脸识别成功");
+                tvNotify.setTextColor(Color.GREEN);
+                // 人脸校验成功
+                String response = new Gson().toJson(msg.obj);
+                Intent intent = new Intent();
+                intent.putExtra("response", response);
+                setResult(Activity.RESULT_OK, intent);
+                finish();
+            } else if (msg.what == STATUS_VERIFY_FAILED) {
+                Toast.makeText(context, "人脸识别失败", Toast.LENGTH_SHORT).show();
+                tvNotify.setText("人脸识别失败");
+                tvNotify.setTextColor(Color.RED);
+            }
             return true;
         }
     });
+    private FaceService faceService;
 
-    public static void start(Activity context, String size, boolean takePictureSound) {
+    public static void start(Activity context, String size, String baseUrl) {
         Intent intent = new Intent(context, CameraActivity.class);
         intent.putExtra("size", size);
-        intent.putExtra("takePictureSound", takePictureSound);
+        intent.putExtra("base_url", baseUrl);
         context.startActivityForResult(intent, REQ_START_CAMERA);
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_camera);
+        setContentView(R.layout.new_activity_camera);
         this.context = this;
         initWidget();
         initData();
@@ -90,21 +116,18 @@ public class CameraActivity extends AppCompatActivity {
         // init camera preview size
         String size = intent.getStringExtra("size");
         String[] items = size.split("_");
-        previewSize.x = Integer.valueOf(items[0]);
-        previewSize.y = Integer.valueOf(items[1]);
-        takePictureSound = intent.getBooleanExtra("takePictureSound", false);
+        previewSize.x = Integer.parseInt(items[0]);
+        previewSize.y = Integer.parseInt(items[1]);
+        String baseUrl = intent.getStringExtra("base_url");
+        faceService = ServiceHelper.getFaceServiceInstance(baseUrl);
     }
 
     private void initWidget() {
-        rlContainer = findViewById(R.id.rlContainer);
         previewView = findViewById(R.id.previewView);
-        ivTakePhoto = findViewById(R.id.ivTakePhoto);
-        emptyHolderView = findViewById(R.id.emptyHolderView);
+        emptyContainer = findViewById(R.id.emptyContainer);
         tvEmptyMsg = findViewById(R.id.tvEmptyMsg);
-        picturePreviewContainer = findViewById(R.id.llPicturePreviewContainer);
-        ivPicturePreview = findViewById(R.id.ivPicturePreview);
-        btnRetry = findViewById(R.id.btnRetry);
-        btnDone = findViewById(R.id.btnDone);
+        tvNotify = findViewById(R.id.tv_notify);
+
         if (getSupportActionBar() != null) {
             getSupportActionBar().hide();
         }
@@ -122,149 +145,151 @@ public class CameraActivity extends AppCompatActivity {
         uvcCamera.setConnectCallback(new ConnectCallback() {
             @Override
             public void onAttached(UsbDevice usbDevice) {
+                Toast.makeText(context, "onAttached", Toast.LENGTH_SHORT).show();
                 uvcCamera.requestPermission(usbDevice);
             }
 
             @Override
             public void onGranted(UsbDevice usbDevice, boolean granted) {
+                Toast.makeText(context, "onGranted", Toast.LENGTH_SHORT).show();
                 if (granted) {
                     uvcCamera.connectDevice(usbDevice);
                 } else {
-                    emptyHolderView.setVisibility(View.VISIBLE);
-                    tvEmptyMsg.setText("权限授予异常，请插拔USB接口重新授权");
+                    showEmptyLayout();
+                    tvEmptyMsg.setText(getString(R.string.usb_permission_failed));
                 }
             }
 
             @Override
             public void onConnected(UsbDevice usbDevice) {
+                Toast.makeText(context, "onConnected", Toast.LENGTH_SHORT).show();
+                showEmptyLayout();
+                tvEmptyMsg.setText("正在启动相机，请稍后");
                 uvcCamera.openCamera();
-                emptyHolderView.setVisibility(View.GONE);
             }
 
             @Override
             public void onCameraOpened() {
-                // 1920 * 1080
-                // 1280 * 720
-                // 640 * 480
-                // 320 * 240
+                Toast.makeText(context, "onCameraOpened", Toast.LENGTH_SHORT).show();
+                // support resolution 1920 * 1080  1280 * 720 640 * 480 320 * 240
                 resizePreview(previewView, previewSize);
                 uvcCamera.setPreviewSize(previewSize.x, previewSize.y);
                 uvcCamera.startPreview();
-                emptyHolderView.setVisibility(View.GONE);
+                hideEmptyLayout();
             }
 
             @Override
             public void onDetached(UsbDevice usbDevice) {
-                uvcCamera.closeCamera();
-                emptyHolderView.setVisibility(View.VISIBLE);
-                tvEmptyMsg.setText("未识别到USB摄像头，请检查连接");
+                Toast.makeText(context, "onDetached", Toast.LENGTH_SHORT).show();
+                //uvcCamera.closeCamera();
+                showEmptyLayout();
+                tvEmptyMsg.setText(getString(R.string.cannot_find_usb));
             }
         });
-
     }
 
+    private void showEmptyLayout() {
+        emptyContainer.setVisibility(View.VISIBLE);
+    }
+
+    private void hideEmptyLayout() {
+        emptyContainer.setVisibility(View.INVISIBLE);
+    }
+
+    /**
+     * 根据摄像头所设置成的预览尺寸来调整预览控件的尺寸
+     *
+     * @param previewView
+     * @param size
+     */
     private void resizePreview(TextureView previewView, Point size) {
         Point screenSize = new Point();
         this.getWindowManager().getDefaultDisplay().getSize(screenSize);
-        RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) previewView.getLayoutParams();
+        ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) previewView.getLayoutParams();
         params.width = screenSize.x;
         params.height = (int) (screenSize.x / (size.x / (size.y * 1.0f)));
         previewView.setLayoutParams(params);
     }
 
     private void initEvent() {
-        ivTakePhoto.setOnTouchListener(new View.OnTouchListener() {
+        uvcCamera.setPreviewCallback(new PreviewCallback() {
             @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_DOWN:
-                        ivTakePhoto.setScaleX(0.9f);
-                        ivTakePhoto.setScaleY(0.9f);
-                        break;
-                    case MotionEvent.ACTION_UP:
-                        ivTakePhoto.setScaleX(1f);
-                        ivTakePhoto.setScaleY(1f);
-                        break;
-                    default:
-                        break;
-                }
-                return false;
-            }
-        });
+            public void onPreviewFrame(final byte[] yuv) {
+                Bitmap fameBitmap = null;
+                Bitmap faceBitmap = null;
+                Bitmap faceBitmap565 = null;
 
-        ivTakePhoto.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    rlContainer.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            rlContainer.setForeground(new ColorDrawable(ContextCompat.getColor(context, R.color.colorWhite)));
-                            rlContainer.postDelayed(new Runnable() {
-                                @Override
-                                public void run() {
-                                    rlContainer.setForeground(null);
-                                    uvcCamera.takePicture();
-                                    playTakePictureSound();
-                                }
-                            }, 100);
+                try {
+                    // 该方法被阻塞不会造成帧的堆积
+                    fameBitmap = ImageUtil.yuv2Bitmap(yuv, previewSize.x, previewSize.y);
+                    faceBitmap = Bitmap.createBitmap(fameBitmap, faceRegion.getBounds().left, faceRegion.getBounds().top, faceRegion.getBounds().width(), faceRegion.getBounds().height());
+                    faceBitmap565 = faceBitmap.copy(Bitmap.Config.RGB_565, true);
+                    FaceDetector faceDetector = new FaceDetector(faceBitmap.getWidth(), faceBitmap.getHeight(), 1);
+                    FaceDetector.Face[] faces = new FaceDetector.Face[1];
+                    int faceNum = faceDetector.findFaces(faceBitmap565, faces);
+                    if (faceNum == 0) {
+                        // 正在检测人脸
+                        messageHandler.sendEmptyMessage(STATUS_FINDING);
+                    } else {
+                        // 检测到人脸，人脸校验中...
+                        messageHandler.sendEmptyMessage(STATUS_VERIFYING);
+                        String faceBase64 = PictureHelper.processPicture(fameBitmap, PictureHelper.JPEG);
+                        RequestBody requestBody = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), getParams(faceBase64));
+                        Call<FaceResult> call = faceService.verifyFace(requestBody);
+                        Response<FaceResult> response = call.execute();
+                        FaceResult faceResult = response.body();
+                        if (faceResult == null || !faceResult.isVerifySuccess()) {
+                            // 人脸校验失败
+                            messageHandler.sendEmptyMessage(STATUS_VERIFY_FAILED);
+                            Thread.sleep(500);
+                        } else {
+                            // 人脸校验成功
+                            Message message = Message.obtain();
+                            message.obj = faceResult;
+                            message.what = STATUS_VERIFY_SUCCESS;
+                            messageHandler.sendMessage(message);
+                            uvcCamera.setPreviewCallback(null);
                         }
-                    }, 100);
-                } else {
-                    uvcCamera.takePicture();
-                    playTakePictureSound();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    messageHandler.sendEmptyMessage(STATUS_VERIFY_FAILED);
+                } finally {
+                    recycleBitmaps(faceBitmap, faceBitmap565, fameBitmap);
                 }
-            }
-        });
-
-        uvcCamera.setPictureTakenCallback(new PictureCallback() {
-            @Override
-            public void onPictureTaken(String path) {
-                picturePreviewContainer.setVisibility(View.VISIBLE);
-                Bitmap bitmap = BitmapFactory.decodeFile(path);
-                ivPicturePreview.setImageBitmap(bitmap);
-                currTakePicturePath = path;
-            }
-        });
-
-        this.btnDone.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                processPicture(messageHandler, currTakePicturePath);
-            }
-        });
-
-        this.btnRetry.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                picturePreviewContainer.setVisibility(View.GONE);
+                recycleBitmaps(faceBitmap, faceBitmap565, fameBitmap);
             }
         });
     }
 
-    private void playTakePictureSound() {
-
+    private String getParams(String faceBase64) {
+        Gson gson = new Gson();
+        HashMap<String, String> paramsMap = new HashMap<>();
+        paramsMap.put("faceBase64", faceBase64);
+        return gson.toJson(paramsMap);
     }
 
-    private void processPicture(final Handler messageHandler, final String picturePath) {
-        if (picturePath == null) {
-            Toast.makeText(context, "拍摄图片路径获取失败", Toast.LENGTH_SHORT).show();
-            return;
+    /**
+     * 回收 bitmap 占用的资源
+     *
+     * @param bitmaps
+     */
+    private void recycleBitmaps(Bitmap... bitmaps) {
+        for (Bitmap bitmap : bitmaps) {
+            if (bitmap != null) {
+                bitmap.recycle();
+            }
         }
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                Bitmap bitmap = BitmapFactory.decodeFile(picturePath);
-                String base64Str = PictureHelper.processPicture(bitmap, PictureHelper.JPEG);
-                DataPersistenceHelper.saveBase64Picture(context, base64Str);
-                messageHandler.sendEmptyMessage(814);
-            }
-        }).start();
     }
 
     @Override
     public void onBackPressed() {
         setResult(Activity.RESULT_CANCELED);
         finish();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
     }
 }

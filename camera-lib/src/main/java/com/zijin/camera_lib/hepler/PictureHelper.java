@@ -20,13 +20,12 @@ public class PictureHelper {
         ByteArrayOutputStream pictureData = new ByteArrayOutputStream();
         Bitmap.CompressFormat compressFormat = encodingType == JPEG ? Bitmap.CompressFormat.JPEG : Bitmap.CompressFormat.PNG;
         try {
-            if (bitmap.compress(compressFormat, 100, pictureData)) {
+            if (bitmap.compress(compressFormat, 80, pictureData)) {
                 byte[] code = pictureData.toByteArray();
                 byte[] outPut = Base64.encode(code, Base64.NO_WRAP);
                 return new String(outPut);
             }
         } catch (Exception e) {
-            Log.e("wk", "Error compressing image.");
             return "";
         }
         return "";
