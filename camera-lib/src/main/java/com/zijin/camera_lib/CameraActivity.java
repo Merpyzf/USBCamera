@@ -27,21 +27,12 @@ import com.lgh.uvccamera.UVCCameraProxy;
 import com.lgh.uvccamera.bean.PicturePath;
 import com.lgh.uvccamera.callback.ConnectCallback;
 import com.lgh.uvccamera.callback.PreviewCallback;
-import com.lgh.uvccamera.utils.FileUtil;
 import com.lgh.uvccamera.utils.ImageUtil;
 import com.zijin.camera_lib.hepler.PictureHelper;
-import com.zijin.camera_lib.hepler.ServiceHelper;
 import com.zijin.camera_lib.model.dto.FaceResult;
-import com.zijin.camera_lib.model.http.FaceService;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 
-import okhttp3.MediaType;
-import okhttp3.RequestBody;
-import retrofit2.Call;
-import retrofit2.Response;
 
 public class CameraActivity extends AppCompatActivity {
     // ui
@@ -91,7 +82,7 @@ public class CameraActivity extends AppCompatActivity {
             return true;
         }
     });
-    private FaceService faceService;
+    //private FaceService faceService;
 
     public static void start(Activity context, String size, String baseUrl) {
         Intent intent = new Intent(context, CameraActivity.class);
@@ -119,7 +110,7 @@ public class CameraActivity extends AppCompatActivity {
         previewSize.x = Integer.parseInt(items[0]);
         previewSize.y = Integer.parseInt(items[1]);
         String baseUrl = intent.getStringExtra("base_url");
-        faceService = ServiceHelper.getFaceServiceInstance(baseUrl);
+        //faceService = ServiceHelper.getFaceServiceInstance(baseUrl);
     }
 
     private void initWidget() {
@@ -232,24 +223,24 @@ public class CameraActivity extends AppCompatActivity {
                         messageHandler.sendEmptyMessage(STATUS_FINDING);
                     } else {
                         // 检测到人脸，人脸校验中...
-                        messageHandler.sendEmptyMessage(STATUS_VERIFYING);
-                        String faceBase64 = PictureHelper.processPicture(fameBitmap, PictureHelper.JPEG);
-                        RequestBody requestBody = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), getParams(faceBase64));
-                        Call<FaceResult> call = faceService.verifyFace(requestBody);
-                        Response<FaceResult> response = call.execute();
-                        FaceResult faceResult = response.body();
-                        if (faceResult == null || !faceResult.isVerifySuccess()) {
-                            // 人脸校验失败
-                            messageHandler.sendEmptyMessage(STATUS_VERIFY_FAILED);
-                            Thread.sleep(500);
-                        } else {
-                            // 人脸校验成功
-                            Message message = Message.obtain();
-                            message.obj = faceResult;
-                            message.what = STATUS_VERIFY_SUCCESS;
-                            messageHandler.sendMessage(message);
-                            uvcCamera.setPreviewCallback(null);
-                        }
+                        //messageHandler.sendEmptyMessage(STATUS_VERIFYING);
+                        //String faceBase64 = PictureHelper.processPicture(fameBitmap, PictureHelper.JPEG);
+                        //RequestBody requestBody = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), getParams(faceBase64));
+                        //Call<FaceResult> call = faceService.verifyFace(requestBody);
+                        //Response<FaceResult> response = call.execute();
+                        //FaceResult faceResult = response.body();
+                        //if (faceResult == null || !faceResult.isVerifySuccess()) {
+                        //    // 人脸校验失败
+                        //    messageHandler.sendEmptyMessage(STATUS_VERIFY_FAILED);
+                        //    Thread.sleep(500);
+                        //} else {
+                        //    // 人脸校验成功
+                        //    Message message = Message.obtain();
+                        //    message.obj = faceResult;
+                        //    message.what = STATUS_VERIFY_SUCCESS;
+                        //    messageHandler.sendMessage(message);
+                        //    uvcCamera.setPreviewCallback(null);
+                        //}
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
