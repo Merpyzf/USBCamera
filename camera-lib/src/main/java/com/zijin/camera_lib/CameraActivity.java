@@ -22,14 +22,11 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.gson.Gson;
 import com.lgh.uvccamera.UVCCameraProxy;
 import com.lgh.uvccamera.bean.PicturePath;
 import com.lgh.uvccamera.callback.ConnectCallback;
 import com.lgh.uvccamera.callback.PreviewCallback;
 import com.lgh.uvccamera.utils.ImageUtil;
-import com.zijin.camera_lib.hepler.PictureHelper;
-import com.zijin.camera_lib.model.dto.FaceResult;
 
 import java.util.HashMap;
 
@@ -69,9 +66,9 @@ public class CameraActivity extends AppCompatActivity {
                 tvNotify.setText("人脸识别成功");
                 tvNotify.setTextColor(Color.GREEN);
                 // 人脸校验成功
-                String response = new Gson().toJson(msg.obj);
+                //String response = new Gson().toJson(msg.obj);
                 Intent intent = new Intent();
-                intent.putExtra("response", response);
+                intent.putExtra("response", "");
                 setResult(Activity.RESULT_OK, intent);
                 finish();
             } else if (msg.what == STATUS_VERIFY_FAILED) {
@@ -254,10 +251,11 @@ public class CameraActivity extends AppCompatActivity {
     }
 
     private String getParams(String faceBase64) {
-        Gson gson = new Gson();
-        HashMap<String, String> paramsMap = new HashMap<>();
-        paramsMap.put("faceBase64", faceBase64);
-        return gson.toJson(paramsMap);
+        //Gson gson = new Gson();
+        //HashMap<String, String> paramsMap = new HashMap<>();
+        //paramsMap.put("faceBase64", faceBase64);
+        //return gson.toJson(paramsMap);
+        return "";
     }
 
     /**
