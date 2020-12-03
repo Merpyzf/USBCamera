@@ -78,7 +78,7 @@ public class CameraActivity extends AppCompatActivity {
                 // 人脸校验成功
                 String response = new Gson().toJson(msg.obj);
                 Intent intent = new Intent();
-                intent.putExtra("response", "");
+                intent.putExtra("response",  response);
                 setResult(Activity.RESULT_OK, intent);
                 finish();
             } else if (msg.what == STATUS_VERIFY_FAILED) {
