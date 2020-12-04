@@ -9,12 +9,12 @@ import android.graphics.Point;
 import android.graphics.Region;
 import android.hardware.usb.UsbDevice;
 import android.media.FaceDetector;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.support.constraint.ConstraintLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.TextView;
@@ -46,12 +46,14 @@ public class CameraActivity extends AppCompatActivity {
     private TextView tvNotify;
     // logic
     private final Point previewSize = new Point(1920, 1080);
-    private final Region faceRegion = new Region(384, 97, 876, 580);
+    private final Point screenSize = new Point(1920, 1080);
+    private final Region faceRegion = new Region();
     public final static int REQ_START_CAMERA = 0x0814;
     private final int STATUS_FINDING = 0x0814;
     private final int STATUS_VERIFYING = 0x0815;
     private final int STATUS_VERIFY_SUCCESS = 0x0816;
     private final int STATUS_VERIFY_FAILED = 0x0817;
+
     private UVCCameraProxy uvcCamera;
     private Context context;
 
@@ -73,7 +75,7 @@ public class CameraActivity extends AppCompatActivity {
                 // 人脸校验成功
                 String response = new Gson().toJson(msg.obj);
                 Intent intent = new Intent();
-                intent.putExtra("response",  response);
+                intent.putExtra("response", response);
                 setResult(Activity.RESULT_OK, intent);
                 finish();
             } else if (msg.what == STATUS_VERIFY_FAILED) {
@@ -95,12 +97,34 @@ public class CameraActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.new_activity_camera);
+        setContentView(R.layout.activity_camera);
         this.context = this;
+        initScreenSize();
         initWidget();
         initData();
+        initFaceRegion();
         initCamera();
         initEvent();
+    }
+
+    private void initFaceRegion() {
+        //private final Region faceRegion = new Region(662, 160, 1250, 840);
+        float withRatio = previewSize.x * 1.0f / screenSize.x;
+        float heightRatio = previewSize.y * 1.0f / screenSize.y;
+        int left = (int) (662 * withRatio);
+        int top = (int) (160 * heightRatio);
+        int right = (int) (1250 * withRatio);
+        int bottom = (int) (840 * heightRatio);
+        faceRegion.set(left, top, right, bottom);
+    }
+
+    private void initScreenSize() {
+        DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getRealMetrics(metrics);
+        int width = metrics.widthPixels;
+        int height = metrics.heightPixels;
+        this.screenSize.x = width;
+        this.screenSize.y = height;
     }
 
     private void initData() {
@@ -210,7 +234,8 @@ public class CameraActivity extends AppCompatActivity {
                     fameBitmap = ImageUtil.yuv2Bitmap(yuv, previewSize.x, previewSize.y);
                     faceBitmap = Bitmap.createBitmap(fameBitmap, faceRegion.getBounds().left, faceRegion.getBounds().top, faceRegion.getBounds().width(), faceRegion.getBounds().height());
                     faceBitmap565 = faceBitmap.copy(Bitmap.Config.RGB_565, true);
-                    FaceDetector faceDetector = new FaceDetector(faceBitmap.getWidth(), faceBitmap.getHeight(), 1);
+                    // 人脸识别图像的宽高必须是偶数
+                    FaceDetector faceDetector = new FaceDetector(faceBitmap565.getWidth(), faceBitmap565.getHeight(), 1);
                     FaceDetector.Face[] faces = new FaceDetector.Face[1];
                     int faceNum = faceDetector.findFaces(faceBitmap565, faces);
                     if (faceNum == 0) {
@@ -241,9 +266,8 @@ public class CameraActivity extends AppCompatActivity {
                     e.printStackTrace();
                     messageHandler.sendEmptyMessage(STATUS_VERIFY_FAILED);
                 } finally {
-                    recycleBitmaps(faceBitmap, faceBitmap565, fameBitmap);
+                    recycleBitmaps(faceBitmap565, fameBitmap, faceBitmap);
                 }
-                recycleBitmaps(faceBitmap, faceBitmap565, fameBitmap);
             }
         });
     }
