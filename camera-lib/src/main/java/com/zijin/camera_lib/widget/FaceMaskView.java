@@ -33,7 +33,6 @@ public class FaceMaskView extends View {
         super.onLayout(changed, left, top, right, bottom);
         int width = getMeasuredWidth();
         int height = getMeasuredHeight();
-        Log.i("wk", "width: " + width + "height: " + height);
     }
 
     @Override

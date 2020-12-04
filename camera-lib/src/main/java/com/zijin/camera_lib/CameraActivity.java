@@ -15,12 +15,9 @@ import android.os.Message;
 import android.support.constraint.ConstraintLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.TextureView;
 import android.view.View;
-import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.lgh.uvccamera.UVCCameraProxy;
@@ -67,12 +64,10 @@ public class CameraActivity extends AppCompatActivity {
                 tvNotify.setText("人脸检测中，请将人脸放入识别区域");
                 tvNotify.setTextColor(Color.WHITE);
             } else if (msg.what == STATUS_VERIFYING) {
-                Toast.makeText(context, "检测到人脸，识别中", Toast.LENGTH_SHORT).show();
                 // 检测到人脸，人脸识别中
                 tvNotify.setText("检测到人脸，识别中");
                 tvNotify.setTextColor(Color.WHITE);
             } else if (msg.what == STATUS_VERIFY_SUCCESS) {
-                Toast.makeText(context, "人脸识别成功", Toast.LENGTH_SHORT).show();
                 tvNotify.setText("人脸识别成功");
                 tvNotify.setTextColor(Color.GREEN);
                 // 人脸校验成功
@@ -82,7 +77,6 @@ public class CameraActivity extends AppCompatActivity {
                 setResult(Activity.RESULT_OK, intent);
                 finish();
             } else if (msg.what == STATUS_VERIFY_FAILED) {
-                Toast.makeText(context, "人脸识别失败", Toast.LENGTH_SHORT).show();
                 tvNotify.setText("人脸识别失败");
                 tvNotify.setTextColor(Color.RED);
             }
@@ -143,13 +137,11 @@ public class CameraActivity extends AppCompatActivity {
         uvcCamera.setConnectCallback(new ConnectCallback() {
             @Override
             public void onAttached(UsbDevice usbDevice) {
-                Toast.makeText(context, "onAttached", Toast.LENGTH_SHORT).show();
                 uvcCamera.requestPermission(usbDevice);
             }
 
             @Override
             public void onGranted(UsbDevice usbDevice, boolean granted) {
-                Toast.makeText(context, "onGranted", Toast.LENGTH_SHORT).show();
                 if (granted) {
                     uvcCamera.connectDevice(usbDevice);
                 } else {
@@ -160,7 +152,6 @@ public class CameraActivity extends AppCompatActivity {
 
             @Override
             public void onConnected(UsbDevice usbDevice) {
-                Toast.makeText(context, "onConnected", Toast.LENGTH_SHORT).show();
                 showEmptyLayout();
                 tvEmptyMsg.setText("正在启动相机，请稍后");
                 uvcCamera.openCamera();
@@ -168,7 +159,6 @@ public class CameraActivity extends AppCompatActivity {
 
             @Override
             public void onCameraOpened() {
-                Toast.makeText(context, "onCameraOpened", Toast.LENGTH_SHORT).show();
                 // support resolution 1920 * 1080  1280 * 720 640 * 480 320 * 240
                 resizePreview(previewView, previewSize);
                 uvcCamera.setPreviewSize(previewSize.x, previewSize.y);
@@ -178,7 +168,6 @@ public class CameraActivity extends AppCompatActivity {
 
             @Override
             public void onDetached(UsbDevice usbDevice) {
-                Toast.makeText(context, "onDetached", Toast.LENGTH_SHORT).show();
                 showEmptyLayout();
                 tvEmptyMsg.setText(getString(R.string.cannot_find_usb));
             }
@@ -230,7 +219,7 @@ public class CameraActivity extends AppCompatActivity {
                     } else {
                         // 检测到人脸，人脸校验中...
                         messageHandler.sendEmptyMessage(STATUS_VERIFYING);
-                        String faceBase64 = PictureHelper.processPicture(fameBitmap, PictureHelper.JPEG);
+                        String faceBase64 = PictureHelper.processPicture(faceBitmap565, PictureHelper.JPEG);
                         RequestBody requestBody = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), getParams(faceBase64));
                         Call<FaceResult> call = faceService.verifyFace(requestBody);
                         Response<FaceResult> response = call.execute();
