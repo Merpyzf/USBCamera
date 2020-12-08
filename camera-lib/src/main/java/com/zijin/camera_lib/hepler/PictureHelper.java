@@ -12,7 +12,7 @@ import java.io.ByteArrayOutputStream;
  *
  * @author wangke
  */
-public class PictureHelper {
+public class  PictureHelper {
     public static final int JPEG = 1;
     public static final int PNG = 2;
 
