@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Point;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -14,24 +15,39 @@ import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
+import android.hardware.camera2.params.StreamConfigurationMap;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
+import android.util.Size;
 import android.view.Surface;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.TextureView;
+import android.view.ViewGroup;
+
+import com.zijin.camera_lib.hepler.Camera2Helper;
+import com.zijin.camera_lib.hepler.CameraSizeHelper;
+import com.zijin.camera_lib.hepler.UIHelper;
+import com.zijin.camera_lib.model.SmartSize;
+import com.zijin.camera_lib.widget.AutoFitSurfaceView;
+
 import java.util.Arrays;
 
 public class Camera2Activity extends AppCompatActivity implements TextureView.SurfaceTextureListener {
-    private TextureView textureView;
+    private TextureView viewFinder;
     private String cameraId = "";
     private CameraManager cameraManager;
     private Camera2Activity activity;
     private CameraDevice cameraDevice;
     private CaptureRequest captureRequest;
     private CameraCaptureSession session;
+    private SmartSize previewSmartSize;
+
 
     public static void start(Context context) {
         Intent intent = new Intent(context, Camera2Activity.class);
@@ -44,25 +60,18 @@ public class Camera2Activity extends AppCompatActivity implements TextureView.Su
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera2);
         this.activity = this;
+        Point screenSize = UIHelper.getScreenSize(this);
         initWidget();
         initEvent();
     }
 
     private void initWidget() {
-        textureView = findViewById(R.id.textureView);
+        viewFinder = findViewById(R.id.viewFinder);
+        getSupportActionBar().hide();
     }
 
     private void initEvent() {
-        textureView.setSurfaceTextureListener(this);
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    @Override
-    public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            this.initCameraInfo();
-        }
-        this.openCamera();
+        viewFinder.setSurfaceTextureListener(this);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -70,24 +79,26 @@ public class Camera2Activity extends AppCompatActivity implements TextureView.Su
         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.LOLLIPOP) {
             return;
         }
+        cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+        cameraId = Camera2Helper.getFrontCameraId(cameraManager);
         try {
-            cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-            String[] cameraIdList = cameraManager.getCameraIdList();
-            for (String cameraId : cameraIdList) {
-                CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
-                // 必须使用前置
-                if (characteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT) {
-                    this.cameraId = cameraId;
-                    break;
-                }
-            }
+            CameraCharacteristics cameraCharacteristics = cameraManager.getCameraCharacteristics(cameraId);
+            previewSmartSize = CameraSizeHelper.getPreviewSmartSize(viewFinder.getDisplay(), cameraCharacteristics);
+
+            ViewGroup.LayoutParams layoutParams = viewFinder.getLayoutParams();
+            layoutParams.width = 1080;
+            layoutParams.height = 1920;
+            viewFinder.setLayoutParams(layoutParams);
+
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
+
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     private void openCamera() {
+        // todo 权限申请
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
@@ -123,12 +134,13 @@ public class Camera2Activity extends AppCompatActivity implements TextureView.Su
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     private void startPreview() {
-        SurfaceTexture surfaceTexture = textureView.getSurfaceTexture();
-        surfaceTexture.setDefaultBufferSize(1920, 1080);
-        Surface surface = new Surface(surfaceTexture);
         try {
+            SurfaceTexture surfaceTexture = viewFinder.getSurfaceTexture();
+            // 设置为当前预览图像的大小
+            surfaceTexture.setDefaultBufferSize(previewSmartSize.getLonger(), previewSmartSize.getShorter());
+            Surface surface = new Surface(surfaceTexture);
             //创建CaptureRequestBuilder，TEMPLATE_PREVIEW比表示预览请求
-            final CaptureRequest.Builder  captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            final CaptureRequest.Builder captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             //设置Surface作为预览数据的显示界面
             captureRequestBuilder.addTarget(surface);
             //创建相机捕获会话，第一个参数是捕获数据的输出Surface列表，第二个参数是CameraCaptureSession的状态回调接口，当它创建好后会回调onConfigured方法，第三个参数用来确定Callback在哪个线程执行，为null的话就在当前线程执行
@@ -189,9 +201,21 @@ public class Camera2Activity extends AppCompatActivity implements TextureView.Su
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
-
     }
 
+    @Override
+    public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            this.initCameraInfo();
+        }
+        viewFinder.post(new Runnable() {
+            @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+            @Override
+            public void run() {
+                openCamera();
+            }
+        });
+    }
 
     @Override
     public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
