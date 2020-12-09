@@ -14,10 +14,12 @@ import android.os.Message;
 import android.support.constraint.ConstraintLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.lgh.uvccamera.UVCCameraProxy;
@@ -28,8 +30,10 @@ import com.lgh.uvccamera.utils.ImageUtil;
 import com.zijin.camera_lib.hepler.PictureHelper;
 import com.zijin.camera_lib.hepler.ServiceHelper;
 import com.zijin.camera_lib.model.dto.FaceResult;
+import com.zijin.camera_lib.model.dto.UserInfo;
 import com.zijin.camera_lib.model.http.FaceService;
 
+import java.io.IOException;
 import java.util.HashMap;
 
 import okhttp3.MediaType;
@@ -49,13 +53,19 @@ public class CameraActivity extends AppCompatActivity {
     private final Point screenSize = new Point(1920, 1080);
     private final Region faceRegion = new Region();
     public final static int REQ_START_CAMERA = 0x0814;
+    // can do things
+    public final static int FOR_LOGIN = 0x001;
+    public final static int FOR_USER_INFO = 0x002;
+    // verify face message
     private final int STATUS_FINDING = 0x0814;
     private final int STATUS_VERIFYING = 0x0815;
     private final int STATUS_VERIFY_SUCCESS = 0x0816;
     private final int STATUS_VERIFY_FAILED = 0x0817;
-
     private UVCCameraProxy uvcCamera;
     private Context context;
+    // token
+    private String authorization;
+    private int doWhat = FOR_LOGIN;
 
 
     private final Handler messageHandler = new Handler(new Handler.Callback() {
@@ -87,10 +97,35 @@ public class CameraActivity extends AppCompatActivity {
     });
     private FaceService faceService;
 
-    public static void start(Activity context, String size, String baseUrl) {
+    /**
+     * 开启人脸验证进行登录
+     *
+     * @param context
+     * @param size    预览画面尺寸
+     * @param baseUrl 项目基础地址
+     */
+    public static void start4Login(Activity context, String size, String baseUrl) {
         Intent intent = new Intent(context, CameraActivity.class);
+        intent.putExtra("doWhat", FOR_LOGIN);
         intent.putExtra("size", size);
         intent.putExtra("base_url", baseUrl);
+        context.startActivityForResult(intent, REQ_START_CAMERA);
+    }
+
+    /**
+     * 开启人脸验证以获取识别到的用户信息
+     *
+     * @param context
+     * @param authorization 认证token
+     * @param size          预览画面尺寸
+     * @param baseUrl       项目基础地址
+     */
+    public static void start4GetUserInfo(Activity context, String authorization, String size, String baseUrl) {
+        Intent intent = new Intent(context, CameraActivity.class);
+        intent.putExtra("doWhat", FOR_USER_INFO);
+        intent.putExtra("size", size);
+        intent.putExtra("base_url", baseUrl);
+        intent.putExtra("authorization", authorization);
         context.startActivityForResult(intent, REQ_START_CAMERA);
     }
 
@@ -129,6 +164,10 @@ public class CameraActivity extends AppCompatActivity {
 
     private void initData() {
         Intent intent = getIntent();
+        doWhat = intent.getIntExtra("doWhat", 0);
+        if (doWhat == FOR_USER_INFO) {
+            authorization = intent.getStringExtra("authorization");
+        }
         // init camera preview size
         String size = intent.getStringExtra("size");
         String[] items = size.split("_");
@@ -244,23 +283,7 @@ public class CameraActivity extends AppCompatActivity {
                     } else {
                         // 检测到人脸，人脸校验中...
                         messageHandler.sendEmptyMessage(STATUS_VERIFYING);
-                        String faceBase64 = PictureHelper.processPicture(faceBitmap565, PictureHelper.JPEG);
-                        RequestBody requestBody = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), getParams(faceBase64));
-                        Call<FaceResult> call = faceService.verifyFace(requestBody);
-                        Response<FaceResult> response = call.execute();
-                        FaceResult faceResult = response.body();
-                        if (faceResult == null || !faceResult.isVerifySuccess()) {
-                            // 人脸校验失败
-                            messageHandler.sendEmptyMessage(STATUS_VERIFY_FAILED);
-                            Thread.sleep(500);
-                        } else {
-                            // 人脸校验成功
-                            Message message = Message.obtain();
-                            message.obj = faceResult;
-                            message.what = STATUS_VERIFY_SUCCESS;
-                            messageHandler.sendMessage(message);
-                            uvcCamera.setPreviewCallback(null);
-                        }
+                        doRequest(PictureHelper.processPicture(faceBitmap565, PictureHelper.JPEG));
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -270,6 +293,56 @@ public class CameraActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    private void doRequest(String faceBase64) throws IOException, InterruptedException {
+        if (doWhat == FOR_LOGIN) {
+            verifyFace4Login(faceBase64);
+        } else {
+            verifyFace4UserInfo(faceBase64);
+        }
+    }
+
+    private void verifyFace4UserInfo(String faceBase64) throws java.io.IOException, InterruptedException {
+        if (TextUtils.isEmpty(authorization)) {
+            Toast.makeText(context, "校验失败,token不能为空", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        RequestBody requestBody = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), getParams(faceBase64));
+        Call<UserInfo> call = faceService.getUserInfo(authorization, requestBody);
+        Response<UserInfo> response = call.execute();
+        UserInfo userInfoResult = response.body();
+        if (userInfoResult == null || !userInfoResult.isVerifySuccess()) {
+            // 人脸校验失败
+            messageHandler.sendEmptyMessage(STATUS_VERIFY_FAILED);
+            Thread.sleep(500);
+        } else {
+            // 人脸校验成功
+            Message message = Message.obtain();
+            message.obj = userInfoResult;
+            message.what = STATUS_VERIFY_SUCCESS;
+            messageHandler.sendMessage(message);
+            uvcCamera.setPreviewCallback(null);
+        }
+    }
+
+    private void verifyFace4Login(String faceBase64) throws java.io.IOException, InterruptedException {
+        RequestBody requestBody = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), getParams(faceBase64));
+        Call<FaceResult> call = faceService.verifyFace(requestBody);
+        Response<FaceResult> response = call.execute();
+        FaceResult faceResult = response.body();
+        if (faceResult == null || !faceResult.isVerifySuccess()) {
+            // 人脸校验失败
+            messageHandler.sendEmptyMessage(STATUS_VERIFY_FAILED);
+            Thread.sleep(500);
+        } else {
+            // 人脸校验成功
+            Message message = Message.obtain();
+            message.obj = faceResult;
+            message.what = STATUS_VERIFY_SUCCESS;
+            messageHandler.sendMessage(message);
+            uvcCamera.setPreviewCallback(null);
+        }
     }
 
     private String getParams(String faceBase64) {
