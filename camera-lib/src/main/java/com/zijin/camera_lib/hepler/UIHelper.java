@@ -1,10 +1,16 @@
 package com.zijin.camera_lib.hepler;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Point;
+import android.os.Build;
 import android.util.DisplayMetrics;
 import android.util.Size;
+import android.view.Display;
+import android.view.WindowManager;
+
+import com.zijin.camera_lib.model.SmartSize;
 
 /**
  * Description:
@@ -23,24 +29,18 @@ public class UIHelper {
      * @param activity
      * @return
      */
-    public static Point getScreenSize(Activity activity) {
-        Point size = new Point();
-        DisplayMetrics metrics = new DisplayMetrics();
-        activity.getWindowManager().getDefaultDisplay().getRealMetrics(metrics);
-        int width = metrics.widthPixels;
-        int height = metrics.heightPixels;
-        size.x = width;
-        size.y = height;
-        // 横屏
-        if (activity.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            size.x = height;
-            size.y = width;
-            // 竖屏
+    public static SmartSize getScreenSmartSize(Activity activity) {
+        WindowManager windowManager = (WindowManager) activity.getSystemService(Context.WINDOW_SERVICE);
+        final Display display = windowManager.getDefaultDisplay();
+        Point outPoint = new Point();
+        if (Build.VERSION.SDK_INT >= 19) {
+            // 可能有虚拟按键的情况
+            display.getRealSize(outPoint);
         } else {
-            size.x = width;
-            size.y = height;
+            // 不可能有虚拟按键
+            display.getSize(outPoint);
         }
-        return size;
+        return new SmartSize(outPoint.x, outPoint.y);
     }
 }
 

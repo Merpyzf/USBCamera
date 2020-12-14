@@ -1,5 +1,10 @@
 <resources>
     <string name="usb_permission_failed">权限授予异常，请插拔USB接口重新授权</string>
     <string name="cannot_find_usb">"未识别到USB摄像头，请检查连接"</string>
+    <string name="text_canot_find_match_face_mask">没有找到和当前设备分辨率匹配的蒙板资源</string>
+    <string name="text_face_finding">人脸检测中，请将人脸放入识别区域</string>
+    <string name="text_face_verifying">检测到人脸，识别中</string>
+    <string name="text_verify_success">人脸识别成功</string>
+    <string name="text_face_verify_failed">人脸识别失败</string>
 
 </resources>
