@@ -6,7 +6,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-
 import com.zijin.camera_lib.CameraActivity;
 
 public class MainActivity extends AppCompatActivity {
@@ -19,8 +18,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 //CameraActivity.start4Login(MainActivity.this, "1280_720", "http://10.2.72.10:8080/");
-                CameraActivity.start4GetUserInfo(MainActivity.this, "authorization", "1280_720", "http://10.2.72.10:8080/");
-            }
+                Camera2Activity.start(MainActivity.this);
+           }
         });
     }
 
