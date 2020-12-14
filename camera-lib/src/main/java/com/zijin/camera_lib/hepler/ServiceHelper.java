@@ -1,7 +1,10 @@
 package com.zijin.camera_lib.hepler;
 
 
+import com.google.gson.Gson;
 import com.zijin.camera_lib.model.http.FaceService;
+
+import java.util.HashMap;
 
 /**
  * Description:
@@ -21,5 +24,12 @@ public class ServiceHelper {
             }
         }
         return sFaceService;
+    }
+
+    public static String getParams(String faceBase64) {
+        Gson gson = new Gson();
+        HashMap<String, String> paramsMap = new HashMap<>();
+        paramsMap.put("faceBase64", faceBase64);
+        return gson.toJson(paramsMap);
     }
 }

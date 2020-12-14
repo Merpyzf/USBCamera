@@ -24,7 +24,7 @@
         app:layout_constraintEnd_toEndOf="@+id/previewView"
         app:layout_constraintStart_toStartOf="@+id/previewView"
         app:layout_constraintTop_toTopOf="@+id/previewView"
-        app:srcCompat="@drawable/face_region_mask" />
+        app:srcCompat="@drawable/face_region_mask_1920_1080" />
 
     <TextView
         android:id="@+id/tv_notify"

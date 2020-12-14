@@ -9,10 +9,11 @@
 
     <application>
         <activity
-            android:name=".Camera2Activity"
+            android:name=".CameraActivity"
+            android:screenOrientation="landscape"
             android:theme="@style/translucentTheme" />
         <activity
-            android:name=".CameraActivity"
+            android:name=".UsbFaceVerifyActivity"
             android:screenOrientation="landscape"
             android:theme="@style/translucentTheme" />
     </application>
