@@ -329,7 +329,6 @@ public class CameraActivity extends AppCompatActivity {
                         FaceDetector faceDetector = new FaceDetector(faceBitmap565.getWidth(), faceBitmap565.getHeight(), 1);
                         FaceDetector.Face[] faces = new FaceDetector.Face[1];
                         int faceNum = faceDetector.findFaces(faceBitmap565, faces);
-                        faceBitmap565.recycle();
                         if (faceNum == 0) {
                             // 正在检测人脸
                             messageHandler.sendEmptyMessage(STATUS_FINDING);
@@ -339,6 +338,7 @@ public class CameraActivity extends AppCompatActivity {
                             messageHandler.sendEmptyMessage(STATUS_VERIFYING);
                             // 检测到人脸，人脸校验中
                             String faceBase64 = PictureHelper.processPicture(faceBitmap565, PictureHelper.JPEG);
+                            faceBitmap565.recycle();
                             try {
                                 RequestBody requestBody = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), ServiceHelper.getParams(faceBase64));
                                 Call<FaceResult> call = faceService.verifyFace(requestBody);
