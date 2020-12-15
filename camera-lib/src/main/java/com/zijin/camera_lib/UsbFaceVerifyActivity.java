@@ -52,7 +52,7 @@ public class UsbFaceVerifyActivity extends AppCompatActivity {
     private final Point previewSize = new Point(1920, 1080);
     private final Point screenSize = new Point(1920, 1080);
     private final Region faceRegion = new Region();
-    public final static int REQ_START_CAMERA = 0x0814;
+    public final static int REQ_START_USB_CAMERA = 0x0814;
     // can do things
     public final static int FOR_LOGIN = 0x001;
     public final static int FOR_USER_INFO = 0x002;
@@ -108,7 +108,7 @@ public class UsbFaceVerifyActivity extends AppCompatActivity {
         intent.putExtra("doWhat", FOR_LOGIN);
         intent.putExtra("size", size);
         intent.putExtra("base_url", baseUrl);
-        context.startActivityForResult(intent, REQ_START_CAMERA);
+        context.startActivityForResult(intent, REQ_START_USB_CAMERA);
     }
 
     /**
@@ -125,7 +125,7 @@ public class UsbFaceVerifyActivity extends AppCompatActivity {
         intent.putExtra("size", size);
         intent.putExtra("base_url", baseUrl);
         intent.putExtra("authorization", authorization);
-        context.startActivityForResult(intent, REQ_START_CAMERA);
+        context.startActivityForResult(intent, REQ_START_USB_CAMERA);
     }
 
     @Override
