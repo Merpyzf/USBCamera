@@ -384,6 +384,8 @@ public class CameraActivity extends AppCompatActivity {
     private Bitmap getFaceBitmap(byte[] data) {
         // 镜像翻转图像
         Matrix matrix = new Matrix();
+        // todo 应根据获取帧的图像实时获取需要旋转的角度
+        matrix.postRotate(180);
         matrix.postScale(-1, 1);
         Bitmap originalBitmap = ImageConvertUtil.nv21ToBitmap(data, previewSize.getLonger(), previewSize.getShorter());
         final Bitmap previewBitmap = Bitmap.createBitmap(originalBitmap, 0, 0, previewSize.getLonger(), previewSize.getShorter(), matrix, true);
