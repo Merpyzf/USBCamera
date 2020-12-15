@@ -95,7 +95,7 @@ public class UsbFaceVerifyActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_camera);
+        setContentView(R.layout.activity_usb_face_verify);
         this.context = this;
         initScreenSize();
         initWidget();

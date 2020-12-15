@@ -24,7 +24,7 @@ public class UIHelper {
     }
 
     /**
-     * 获取当前屏幕的尺寸
+     * 获取当前屏幕的实际尺寸
      *
      * @param activity
      * @return

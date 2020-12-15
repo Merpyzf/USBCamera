@@ -53,7 +53,7 @@ import retrofit2.Call;
 import retrofit2.Response;
 
 public class CameraActivity extends AppCompatActivity {
-    public  static final int REQ_START_CAMERA = 0x0914;
+    public static final int REQ_START_CAMERA = 0x0914;
     // about camera action
     private static final int MSG_OPEN_CAMERA = 1;
     private static final int MSG_CLOSE_CAMERA = 2;
@@ -61,12 +61,13 @@ public class CameraActivity extends AppCompatActivity {
     private static final int MSG_SET_PREVIEW_SURFACE = 4;
     private static final int MSG_START_PREVIEW = 5;
     private static final int MSG_STOP_PREVIEW = 6;
-
+    // about face verify status
     private final int STATUS_FINDING = 0x0814;
     private final int STATUS_VERIFYING = 0x0815;
     private final int STATUS_VERIFY_SUCCESS = 0x0816;
     private final int STATUS_VERIFY_FAILED = 0x0817;
     private final int STATUS_ERROR = 0x0818;
+    private final int STATUS_NET_ERROR = 0x0819;
     // about permission
     private static final int REQUEST_PERMISSIONS_CODE = 1;
     private static final String[] REQUIRED_PERMISSIONS = {Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE};
@@ -103,7 +104,7 @@ public class CameraActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_camera1);
+        setContentView(R.layout.activity_camera);
         screenSize = UIHelper.getScreenSmartSize(this);
         initFaceService();
         startCameraThread();
@@ -317,8 +318,7 @@ public class CameraActivity extends AppCompatActivity {
                 ThreadPoolHelper.getInstance().execute(new Runnable() {
                     @Override
                     public void run() {
-                        String name = Thread.currentThread().getName();
-                        // 如果当前存在正在校验的人脸则忽略后面到来的帧
+                        // 如果当前正在校验则忽略对后面到来的帧的人脸检测
                         lock.lock();
                         if (findFace) {
                             lock.unlock();
@@ -337,7 +337,7 @@ public class CameraActivity extends AppCompatActivity {
                         } else {
                             findFace = true;
                             messageHandler.sendEmptyMessage(STATUS_VERIFYING);
-                            // 检测到人脸，人脸校验中...
+                            // 检测到人脸，人脸校验中
                             String faceBase64 = PictureHelper.processPicture(faceBitmap565, PictureHelper.JPEG);
                             try {
                                 RequestBody requestBody = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), ServiceHelper.getParams(faceBase64));
@@ -359,6 +359,13 @@ public class CameraActivity extends AppCompatActivity {
                                 }
                             } catch (IOException | InterruptedException e) {
                                 e.printStackTrace();
+                                messageHandler.sendEmptyMessage(STATUS_NET_ERROR);
+                                try {
+                                    Thread.sleep(500);
+                                } catch (InterruptedException interruptedException) {
+                                    interruptedException.printStackTrace();
+                                }
+                                findFace = false;
                             }
                         }
                     }
@@ -478,6 +485,9 @@ public class CameraActivity extends AppCompatActivity {
                 intent.putExtra("response", response);
                 setResult(Activity.RESULT_OK, intent);
                 finish();
+            } else if (msg.what == STATUS_NET_ERROR) {
+                tvMessage.setTextColor(Color.RED);
+                tvMessage.setText(R.string.text_net_error);
             } else if (msg.what == STATUS_ERROR) {
                 String message = (String) msg.obj;
                 Toast.makeText(CameraActivity.this, message, Toast.LENGTH_LONG).show();

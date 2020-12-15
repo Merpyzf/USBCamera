@@ -1,5 +1,7 @@
 package com.zijin.camera_lib.hepler;
 
+import java.util.concurrent.TimeUnit;
+
 import okhttp3.OkHttpClient;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
@@ -37,6 +39,6 @@ public class RetrofitHelper {
     }
 
     private static OkHttpClient provideDefaultOkHttpClient() {
-        return new OkHttpClient.Builder().build();
+        return new OkHttpClient.Builder().connectTimeout(20, TimeUnit.SECONDS).build();
     }
 }
