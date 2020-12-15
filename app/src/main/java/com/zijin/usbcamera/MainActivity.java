@@ -19,7 +19,10 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 //CameraActivity.start4Login(MainActivity.this, "1280_720", "http://10.2.72.10:8080/");
-                CameraActivity.start(MainActivity.this, "http://10.2.72.10:8080/");
+                //CameraActivity.start(MainActivity.this, "http://10.2.72.10:8080/");
+                Intent intent = new Intent(MainActivity.this, CameraActivity.class);
+                intent.putExtra("base_url", "http://10.2.72.10:8080/");
+                startActivityForResult(intent, CameraActivity.REQ_START_CAMERA);
             }
         });
     }

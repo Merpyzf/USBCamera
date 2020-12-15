@@ -44,38 +44,6 @@ public class CameraSizeHelper {
     private CameraSizeHelper() {
     }
 
-
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    public static SmartSize getPreviewSmartSize(Display display, CameraCharacteristics characteristics) {
-        //SmartSize screenSize = getDisplaySmartSize(display);
-        //boolean hdScreen = screenSize.getLonger() >= SIZE_1080P.getLonger() || screenSize.getShorter() >= SIZE_1080P.getShorter();
-        //// 确定当前预览输出画面的最大尺寸，如果设备的分辨率高于1920*1080则最大按1920*1080的尺寸，否则按照屏幕分辨率大小
-        //SmartSize maxSize = hdScreen ? SIZE_1080P : screenSize;
-        //StreamConfigurationMap config = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-        //Size[] allSizes = config.getOutputSizes(SurfaceTexture.class);
-        //List<SmartSize> smartSizes = sizesToSmartSizeArray(allSizes);
-        //Collections.sort(smartSizes, new Comparator<SmartSize>() {
-        //    @Override
-        //    public int compare(SmartSize o1, SmartSize o2) {
-        //        int o1Count = o1.getSize().getWidth() * o1.getSize().getHeight();
-        //        int o2Count = o2.getSize().getWidth() * o2.getSize().getHeight();
-        //        return Integer.compare(o2Count, o1Count);
-        //    }
-        //});
-        //// 选择一个合适的预览尺寸
-        //// 输出预览尺寸的大小不超过预览显示View的大小，并且长宽比要满足 16：9
-        //for (SmartSize smartSize : smartSizes) {
-        //    if (smartSize.getLonger() <= screenSize.getLonger() && smartSize.getShorter() <= screenSize.getShorter()
-        //            && smartSize.getAspectRatio() > 1.7 && smartSize.getAspectRatio() < 1.8
-        //    ) {
-        //        return smartSize;
-        //    }
-        //
-        //}
-        return null;
-    }
-
-
     public static SmartSize getPreviewSmartSize1(SmartSize screenSize, List<Camera.Size> supportedPreviewSizes) {
         SmartSize basePreviewSize = BASE_SCREEN_SIZES.get(0);
         boolean hdScreen = screenSize.getLonger() >= basePreviewSize.getLonger() || screenSize.getShorter() >= basePreviewSize.getShorter();

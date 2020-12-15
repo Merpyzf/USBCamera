@@ -11,10 +11,6 @@
         android:layout_height="match_parent"
         android:visibility="visible" />
 
-    <com.zijin.camera_lib.widget.FaceMaskView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
     <ImageView
         android:id="@+id/iv_face_mask"
         android:layout_width="0dp"
