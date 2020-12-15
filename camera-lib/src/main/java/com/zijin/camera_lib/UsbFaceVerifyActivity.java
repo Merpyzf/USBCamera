@@ -104,7 +104,7 @@ public class UsbFaceVerifyActivity extends AppCompatActivity {
      * @param baseUrl 项目基础地址
      */
     public static void start4Login(Activity context, String size, String baseUrl) {
-        Intent intent = new Intent(context, CameraActivity.class);
+        Intent intent = new Intent(context, UsbFaceVerifyActivity.class);
         intent.putExtra("doWhat", FOR_LOGIN);
         intent.putExtra("size", size);
         intent.putExtra("base_url", baseUrl);
@@ -120,7 +120,7 @@ public class UsbFaceVerifyActivity extends AppCompatActivity {
      * @param baseUrl       项目基础地址
      */
     public static void start4GetUserInfo(Activity context, String authorization, String size, String baseUrl) {
-        Intent intent = new Intent(context, CameraActivity.class);
+        Intent intent = new Intent(context, UsbFaceVerifyActivity.class);
         intent.putExtra("doWhat", FOR_USER_INFO);
         intent.putExtra("size", size);
         intent.putExtra("base_url", baseUrl);
@@ -131,7 +131,7 @@ public class UsbFaceVerifyActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_camera);
+        setContentView(R.layout.activity_usb_face_verify);
         this.context = this;
         initScreenSize();
         initWidget();
