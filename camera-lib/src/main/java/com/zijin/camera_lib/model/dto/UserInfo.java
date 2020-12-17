@@ -16,6 +16,7 @@ public class UserInfo {
     private String userNo;
     private String userName;
     private String postName;
+    private String faceBase64;
 
     public String getRetCode() {
         return retCode;
@@ -63,6 +64,14 @@ public class UserInfo {
 
     public void setPostName(String postName) {
         this.postName = postName;
+    }
+
+    public String getFaceBase64() {
+        return faceBase64;
+    }
+
+    public void setFaceBase64(String faceBase64) {
+        this.faceBase64 = faceBase64;
     }
 
     @Override
