@@ -16,7 +16,7 @@ public class DataPersistenceHelper {
         context.getSharedPreferences(name, Context.MODE_PRIVATE)
                 .edit()
                 .putString(keyBase64Picture, base64Picture)
-                .apply();
+                .commit();
     }
 
     public static String getBase64Picture(Context context) {
