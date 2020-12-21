@@ -26,15 +26,15 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 //UsbFaceVerifyActivity.start4Login(MainActivity.this, "1280_720", "http://10.2.72.10:8080/");
                 //CameraActivity.start(MainActivity.this, "http://10.2.72.10:8080/");
-                //Intent intent = new Intent(MainActivity.this, CameraActivity.class);
-                //intent.putExtra("base_url", "http://10.2.72.10:8080/");
-                //startActivityForResult(intent, CameraActivity.REQ_START_CAMERA);
-                Intent intent = new Intent(MainActivity.this, UsbFaceVerifyActivity.class);
-                intent.putExtra("doWhat", UsbFaceVerifyActivity.FOR_USER_INFO);
-                intent.putExtra("size", "1280_720");
+                Intent intent = new Intent(MainActivity.this, CameraActivity.class);
                 intent.putExtra("base_url", "http://10.2.72.10:8080/");
-                intent.putExtra("authorization", "lalalal");
-                MainActivity.this.startActivityForResult(intent, UsbFaceVerifyActivity.REQ_START_USB_CAMERA);
+                startActivityForResult(intent, CameraActivity.REQ_START_CAMERA);
+                //Intent intent = new Intent(MainActivity.this, UsbFaceVerifyActivity.class);
+                //intent.putExtra("doWhat", UsbFaceVerifyActivity.FOR_USER_INFO);
+                //intent.putExtra("size", "1280_720");
+                //intent.putExtra("base_url", "http://10.2.72.10:8080/");
+                //intent.putExtra("authorization", "lalalal");
+                //MainActivity.this.startActivityForResult(intent, UsbFaceVerifyActivity.REQ_START_USB_CAMERA);
             }
         });
     }

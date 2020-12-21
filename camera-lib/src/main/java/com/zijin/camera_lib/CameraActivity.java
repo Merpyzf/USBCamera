@@ -18,6 +18,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.WorkerThread;
 import android.support.v4.content.ContextCompat;
@@ -94,6 +95,7 @@ public class CameraActivity extends AppCompatActivity {
     private final ReentrantLock lock = new ReentrantLock();
     private final MessageHandler messageHandler = new MessageHandler();
     private long frameCount = 0;
+    private boolean grantCameraPermission;
 
     public static void start(Activity activity, String baseUrl) {
         Intent intent = new Intent(activity, CameraActivity.class);
@@ -133,9 +135,7 @@ public class CameraActivity extends AppCompatActivity {
         if (!isRequiredPermissionsGranted() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             requestPermissions(REQUIRED_PERMISSIONS, REQUEST_PERMISSIONS_CODE);
         } else if (cameraHandler != null) {
-            if (camera == null) {
-                cameraHandler.obtainMessage(MSG_OPEN_CAMERA, cameraId, 0).sendToTarget();
-            }
+            grantCameraPermission = true;
         }
     }
 
@@ -282,7 +282,7 @@ public class CameraActivity extends AppCompatActivity {
      * 开始预览
      */
     @WorkerThread
-    private void startPreview() {
+    private void sendStartPreviewMsg() {
         if (!isStartPreview) {
             SurfaceHolder previewSurface = this.previewSurfaceHolder;
             if (camera != null && previewSurface != null) {
@@ -412,16 +412,24 @@ public class CameraActivity extends AppCompatActivity {
         @Override
         public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
             previewSurfaceHolder = holder;
-            // 开始启用相机预览
-            cameraHandler.sendEmptyMessage(MSG_SET_PREVIEW_SIZE);
-            cameraHandler.obtainMessage(MSG_SET_PREVIEW_SURFACE, holder).sendToTarget();
-            cameraHandler.sendEmptyMessage(MSG_START_PREVIEW);
+            if (grantCameraPermission) {
+                sendStartPreviewMsg(holder);
+            }
         }
 
         @Override
         public void surfaceDestroyed(SurfaceHolder holder) {
             previewSurfaceHolder = null;
         }
+    }
+
+    private void sendStartPreviewMsg(SurfaceHolder holder) {
+        if (camera == null) {
+            cameraHandler.obtainMessage(MSG_OPEN_CAMERA, cameraId, 0).sendToTarget();
+        }
+        cameraHandler.sendEmptyMessage(MSG_SET_PREVIEW_SIZE);
+        cameraHandler.obtainMessage(MSG_SET_PREVIEW_SURFACE, holder).sendToTarget();
+        cameraHandler.sendEmptyMessage(MSG_START_PREVIEW);
     }
 
     private class CameraHandler extends Handler {
@@ -450,7 +458,7 @@ public class CameraActivity extends AppCompatActivity {
                     break;
                 }
                 case MSG_START_PREVIEW: {
-                    startPreview();
+                    sendStartPreviewMsg();
                     isStartPreview = true;
                     break;
                 }
@@ -494,6 +502,21 @@ public class CameraActivity extends AppCompatActivity {
                 String message = (String) msg.obj;
                 Toast.makeText(CameraActivity.this, message, Toast.LENGTH_LONG).show();
             }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
+            if (camera == null) {
+                cameraHandler.obtainMessage(MSG_OPEN_CAMERA, cameraId, 0).sendToTarget();
+            }
+            sendStartPreviewMsg(previewSurfaceHolder);
+            grantCameraPermission = true;
+        } else {
+            grantCameraPermission = false;
+            Toast.makeText(CameraActivity.this, "权限被拒绝，在使用摄像头前必须先授予权限", Toast.LENGTH_LONG).show();
         }
     }
 }
