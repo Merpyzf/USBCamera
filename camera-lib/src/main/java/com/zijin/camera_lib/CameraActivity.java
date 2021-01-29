@@ -23,6 +23,7 @@ import android.support.annotation.Nullable;
 import android.support.annotation.WorkerThread;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.FrameLayout;
@@ -33,6 +34,7 @@ import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.zijin.camera_lib.hepler.CameraSizeHelper;
+import com.zijin.camera_lib.hepler.DataPersistenceHelper;
 import com.zijin.camera_lib.hepler.FaceRegionMaskDataProvider;
 import com.zijin.camera_lib.hepler.ImageConvertUtil;
 import com.zijin.camera_lib.hepler.PictureHelper;
@@ -42,6 +44,7 @@ import com.zijin.camera_lib.hepler.UIHelper;
 import com.zijin.camera_lib.model.FaceRegionMask;
 import com.zijin.camera_lib.model.SmartSize;
 import com.zijin.camera_lib.model.dto.FaceResult;
+import com.zijin.camera_lib.model.dto.UserInfo;
 import com.zijin.camera_lib.model.http.FaceService;
 
 import java.io.IOException;
@@ -52,6 +55,8 @@ import okhttp3.MediaType;
 import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.Response;
+
+import static com.zijin.camera_lib.hepler.ServiceHelper.getParams;
 
 public class CameraActivity extends AppCompatActivity {
     public static final int REQ_START_CAMERA = 0x0914;
@@ -340,7 +345,7 @@ public class CameraActivity extends AppCompatActivity {
                             String faceBase64 = PictureHelper.processPicture(faceBitmap565, PictureHelper.JPEG);
                             faceBitmap565.recycle();
                             try {
-                                RequestBody requestBody = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), ServiceHelper.getParams(faceBase64));
+                                RequestBody requestBody = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), getParams(faceBase64));
                                 Call<FaceResult> call = faceService.verifyFace(requestBody);
                                 Response<FaceResult> response = null;
                                 response = call.execute();

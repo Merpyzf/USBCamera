@@ -11,6 +11,7 @@ import android.hardware.usb.UsbDevice;
 import android.media.FaceDetector;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.ContactsContract;
 import android.support.constraint.ConstraintLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -317,6 +318,8 @@ public class UsbFaceVerifyActivity extends AppCompatActivity {
             Thread.sleep(500);
         } else {
             DataPersistenceHelper.saveBase64Picture(this, faceBase64);
+            DataPersistenceHelper.saveOriginalPicture(this, userInfoResult.getOriginalPhoto());
+            userInfoResult.setOriginalPhoto(""); // 置空的目的是为了避免通过intent回传数据时的卡顿
             // 人脸校验成功
             Message message = Message.obtain();
             message.obj = userInfoResult;

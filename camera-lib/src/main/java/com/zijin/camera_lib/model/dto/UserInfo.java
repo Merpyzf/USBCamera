@@ -1,5 +1,7 @@
 package com.zijin.camera_lib.model.dto;
 
+import com.zijin.camera_lib.model.Constant;
+
 /**
  * Description: 用户信息
  * Date: 12/9/20
@@ -16,7 +18,8 @@ public class UserInfo {
     private String userNo;
     private String userName;
     private String postName;
-    private String faceBase64;
+    private String identity;
+    private String originalPhoto;
 
     public String getRetCode() {
         return retCode;
@@ -66,12 +69,24 @@ public class UserInfo {
         this.postName = postName;
     }
 
-    public String getFaceBase64() {
-        return faceBase64;
+    public String getIdentity() {
+        return identity;
     }
 
-    public void setFaceBase64(String faceBase64) {
-        this.faceBase64 = faceBase64;
+    public void setIdentity(String identity) {
+        this.identity = identity;
+    }
+
+    public String getOriginalPhoto() {
+        return originalPhoto;
+    }
+
+    public void setOriginalPhoto(String originalPhoto) {
+        this.originalPhoto = originalPhoto;
+    }
+
+    public boolean isVerifySuccess() {
+        return Constant.SUCCESS_CODE.equals(retCode);
     }
 
     @Override
@@ -83,10 +98,8 @@ public class UserInfo {
                 ", userNo='" + userNo + '\'' +
                 ", userName='" + userName + '\'' +
                 ", postName='" + postName + '\'' +
+                ", identity='" + identity + '\'' +
+                ", originalPhoto='" + originalPhoto + '\'' +
                 '}';
-    }
-
-    public boolean isVerifySuccess() {
-        return "000000".equals(retCode);
     }
 }

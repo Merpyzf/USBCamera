@@ -1,5 +1,7 @@
 package com.zijin.camera_lib.model.dto;
 
+import com.zijin.camera_lib.model.Constant;
+
 /**
  * Description:
  * Date: 11/26/20
@@ -94,6 +96,10 @@ public class FaceResult {
         this.token_type = token_type;
     }
 
+    public boolean isVerifySuccess() {
+        return Constant.SUCCESS_CODE.equals(retCode);
+    }
+
     @Override
     public String toString() {
         return "FaceResult{" +
@@ -106,9 +112,5 @@ public class FaceResult {
                 ", scope='" + scope + '\'' +
                 ", token_type='" + token_type + '\'' +
                 '}';
-    }
-
-    public boolean isVerifySuccess() {
-        return "000000".equals(retCode);
     }
 }
